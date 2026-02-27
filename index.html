@@ -3,404 +3,418 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Emergence OI | Tableau de Bord Stratégique</title>
+    <title>Radar des Financements | Emergence OI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Chosen Palette: Warm Professional -> Background: #fafaf9 (Warm Stone), Text: #1c1917, Accents: #ea580c (Orange - Action), #0284c7 (Blue - Digital), #7c3aed (Purple - Culture), #16a34a (Green - Territory) -->
+    <!-- Chosen Palette: Action-Oriented Dashboard -> Background: #f8fafc (Slate 50), Text: #0f172a (Slate 900), Accents: #2563eb (Blue - Trust/Finance), #dc2626 (Red - Urgent), #16a34a (Green - Match) -->
     
     <!-- Application Structure Plan: 
-         1. Header: Branding and Navigation.
-         2. Hero Section: Mission Statement & Key Identity (Fabrique de Territoire).
-         3. Strategic Compass (Radar Chart): Visualizes the balance between the 4 strategic axes (Digital, Inclusion, Culture, Territory). Goal: Show holistic approach.
-         4. Infrastructure Explorer (Interactive Tabs): Toggles details between FabLab, Médialab, and Coworking. Goal: Explain the tools available.
-         5. Hybrid Business Model (Doughnut Chart): Shows the funding mix. Goal: Demonstrate economic sustainability.
-         6. Action Catalog (Filterable Grid): List of concrete programs (Training, Residencies, etc.) filterable by category. Goal: Show the depth of the offer.
-         7. Footer: Call to Action.
+         1. Header: Contextualizes the tool (Feb-Apr 2026 timeframe).
+         2. KPIs Overview: Quick summary of open funds and average match score.
+         3. Main Layout (Two-Column): 
+            - Left: Interactive, ranked list of AAPs (Appels à Projets) sorted by urgency and match score.
+            - Right: Detail Panel ("Note du Consultant"). Shows the strategic analysis, Go/No-Go advice, and resource assessment for the selected AAP.
+         4. Interaction: Clicking a list item updates the detail panel dynamically without reloading, allowing fast review of opportunities.
     -->
 
     <!-- Visualization & Content Choices:
-         1. Radar Chart (Chart.js): Best for showing multivariate data (the 4 axes) to imply balance and coverage.
-         2. Doughnut Chart (Chart.js): Standard for showing parts of a whole (Budget/Funding mix).
-         3. Interactive Tabs/Cards: Used for Infrastructure and Program Catalog to declutter text and allow user-driven exploration.
-         4. No SVG/Mermaid used: Icons are Unicode or CSS-styled elements.
+         1. Status Indicators (HTML/CSS): Colored dots to indicate urgency (Red=Today, Orange=Soon, Green=Rolling). Goal: Drive action.
+         2. Match Score Bar (HTML/CSS): Visual representation of how well the AAP fits Emergence OI's DNA. Goal: Prioritization.
+         3. Radar Chart in Detail Panel (Chart.js): Visualizes the alignment of the specific AAP against our 4 strategic axes. Goal: Quick strategic check.
     -->
 
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
 
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #fafaf9; color: #1c1917; }
-        .chart-container { 
-            position: relative; 
-            width: 100%; 
-            max-width: 600px; 
-            margin-left: auto; 
-            margin-right: auto; 
-            height: 350px; 
-            max-height: 400px; 
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; overflow-x: hidden; }
+        .aap-card { transition: all 0.2s ease; border-left: 4px solid transparent; }
+        .aap-card:hover { background-color: #f1f5f9; cursor: pointer; }
+        .aap-card.selected { background-color: #eff6ff; border-left-color: #2563eb; box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05); }
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            margin: 0 auto;
+            height: 250px;
         }
-        @media (min-width: 768px) { .chart-container { height: 400px; } }
-        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-        .active-tab { border-bottom: 2px solid #ea580c; color: #ea580c; font-weight: 600; }
-        .nav-item { cursor: pointer; padding-bottom: 0.5rem; transition: all 0.2s; }
-        .nav-item:hover { color: #ea580c; }
+        
+        /* Custom Scrollbar for the list */
+        .scrollable-list::-webkit-scrollbar { width: 6px; }
+        .scrollable-list::-webkit-scrollbar-track { background: transparent; }
+        .scrollable-list::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="h-screen flex flex-col">
 
     <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <span class="text-2xl font-bold text-gray-900 tracking-tight">Emergence<span class="text-orange-600">OI</span></span>
+    <header class="bg-slate-900 text-white shadow-md z-10 shrink-0">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">Radar des Financements <span class="text-blue-400">Emergence OI</span></h1>
+                <p class="text-slate-400 text-sm mt-1">Fenêtre de tir : 27 Février - Fin Avril 2026 | Mode : Assistant Pro activé</p>
+            </div>
+            <div class="hidden md:flex gap-4">
+                <div class="bg-slate-800 px-4 py-2 rounded-lg text-center">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Opportunités Identifiées</div>
+                    <div class="text-xl font-bold text-blue-400">5</div>
                 </div>
-                <nav class="hidden md:flex space-x-8">
-                    <span class="nav-item active-tab" onclick="scrollToSection('mission')">Mission</span>
-                    <span class="nav-item" onclick="scrollToSection('strategie')">Stratégie</span>
-                    <span class="nav-item" onclick="scrollToSection('ecosysteme')">Écosystème</span>
-                    <span class="nav-item" onclick="scrollToSection('actions')">Catalogue</span>
-                </nav>
-                <div class="md:hidden">
-                    <!-- Mobile menu placeholder symbol -->
-                    <span class="text-2xl cursor-pointer">☰</span>
+                <div class="bg-slate-800 px-4 py-2 rounded-lg text-center">
+                    <div class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Score Moyen d'Adéquation</div>
+                    <div class="text-xl font-bold text-green-400">82%</div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section id="mission" class="pt-12 pb-8 bg-gradient-to-b from-orange-50 to-[#fafaf9]">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-6">La Fabrique d'Opportunités de La Réunion</h1>
-            <p class="text-xl text-gray-600 leading-relaxed mb-8">
-                Plus qu'un organisme de formation, <strong>Emergence OI</strong> est un catalyseur d'initiatives citoyennes, artistiques et numériques. 
-                Labellisés <em>Fabrique de Territoire</em>, nous allions créativité et utilité sociale pour transformer les parcours de vie.
-            </p>
-            <div class="flex flex-wrap justify-center gap-4">
-                <span class="px-4 py-2 bg-white rounded-full shadow-sm text-sm font-semibold text-gray-700">🏆 Qualiopi</span>
-                <span class="px-4 py-2 bg-white rounded-full shadow-sm text-sm font-semibold text-gray-700">📍 Fabrique de Territoire</span>
-                <span class="px-4 py-2 bg-white rounded-full shadow-sm text-sm font-semibold text-gray-700">💻 Grande École du Numérique</span>
+    <!-- Main Content -->
+    <main class="flex-grow flex overflow-hidden max-w-7xl mx-auto w-full">
+        
+        <!-- Left Column: AAP List -->
+        <section class="w-full md:w-1/3 lg:w-2/5 bg-white border-r border-slate-200 flex flex-col">
+            <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center shrink-0">
+                <h2 class="font-semibold text-slate-800">Appels à Projets (AAP) & Aides</h2>
+                <span class="text-xs bg-slate-200 text-slate-600 px-2 py-1 rounded-full font-medium">Trier par: Urgence</span>
             </div>
-        </div>
-    </section>
+            
+            <div class="overflow-y-auto flex-grow scrollable-list" id="aap-list">
+                <!-- List items injected by JS -->
+            </div>
+        </section>
 
-    <!-- Strategic Compass Section (Radar Chart) -->
-    <section id="strategie" class="py-12 bg-white border-y border-gray-100">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
+        <!-- Right Column: Detail Panel (Consultant View) -->
+        <section class="hidden md:flex md:w-2/3 lg:w-3/5 bg-slate-50 flex-col overflow-y-auto" id="detail-panel">
+            <!-- Default Empty State -->
+            <div id="empty-state" class="h-full flex flex-col items-center justify-center text-slate-400 p-8 text-center">
+                <div class="text-6xl mb-4">🎯</div>
+                <h3 class="text-xl font-semibold text-slate-600 mb-2">Prêt à analyser</h3>
+                <p class="max-w-md">Sélectionne une opportunité dans la liste à gauche pour afficher mon analyse stratégique, notre angle d'attaque et mes recommandations.</p>
+            </div>
+
+            <!-- Content State (Hidden by default) -->
+            <div id="content-state" class="hidden flex-col p-6 lg:p-8">
                 
-                <!-- Text Content -->
-                <div>
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Notre Boussole Stratégique</h2>
-                    <p class="text-gray-600 mb-6">
-                        L'identité d'Emergence OI repose sur l'hybridation. Nous ne cloisonnons pas les savoirs. 
-                        Au contraire, nous créons des ponts entre le <strong>numérique</strong> (compétences d'avenir), 
-                        le <strong>social</strong> (inclusion), la <strong>culture</strong> (lien humain) et le <strong>territoire</strong> (ancrage local).
-                    </p>
-                    <p class="text-sm text-gray-500 italic mb-6">
-                        Explorez le graphique pour visualiser l'équilibre de nos interventions.
-                    </p>
+                <!-- Meta Info -->
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <div class="flex items-center gap-2 mb-2" id="detail-tags">
+                            <!-- Tags injected here -->
+                        </div>
+                        <h2 class="text-3xl font-bold text-slate-900 leading-tight" id="detail-title">Titre AAP</h2>
+                        <p class="text-slate-500 font-medium mt-2" id="detail-sponsor">Financeur</p>
+                    </div>
+                    <div class="text-right shrink-0 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+                        <div class="text-xs text-slate-500 uppercase font-bold mb-1">Échéance</div>
+                        <div class="text-lg font-bold" id="detail-deadline">Date</div>
+                    </div>
+                </div>
+
+                <!-- Core Analysis Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                     
-                    <!-- KPI Cards Mini -->
-                    <div class="grid grid-cols-2 gap-4 mt-8">
-                        <div class="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
-                            <h3 class="font-bold text-gray-900">Inclusion</h3>
-                            <p class="text-sm text-gray-600">Publics éloignés de l'emploi & jeunes</p>
-                        </div>
-                        <div class="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                            <h3 class="font-bold text-gray-900">Innovation</h3>
-                            <p class="text-sm text-gray-600">IA, FabLab & Culture Maker</p>
+                    <!-- Consultant Note -->
+                    <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm relative overflow-hidden">
+                        <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                        <h3 class="font-bold text-slate-800 mb-3 flex items-center"><span class="mr-2">💡</span> Mon Analyse Stratégique</h3>
+                        <p class="text-slate-600 text-sm leading-relaxed mb-4" id="detail-analysis">
+                            Analyse text here.
+                        </p>
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="text-xs font-bold text-blue-800 uppercase mb-2">Notre Angle d'Attaque (Pitch)</h4>
+                            <p class="text-blue-900 text-sm italic" id="detail-pitch">Pitch text here.</p>
                         </div>
                     </div>
-                </div>
 
-                <!-- Visualization -->
-                <div class="bg-gray-50 rounded-xl p-6 shadow-inner">
-                    <h3 class="text-center text-sm font-semibold text-gray-500 mb-4 uppercase tracking-wider">Intensité de l'Action par Axe</h3>
-                    <div class="chart-container">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Ecosystem & Infrastructure (Interactive) -->
-    <section id="ecosysteme" class="py-16 bg-[#fafaf9]">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center max-w-3xl mx-auto mb-12">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Un Écosystème Intégré</h2>
-                <p class="text-gray-600">
-                    Pour mener à bien notre mission, nous nous appuyons sur des infrastructures physiques concrètes. 
-                    Ces espaces sont ouverts, collaboratifs et conçus pour favoriser l'émergence de projets.
-                    Cliquez sur les lieux ci-dessous pour découvrir leur fonction.
-                </p>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-8">
-                <!-- FabLab Card -->
-                <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 infra-card" onclick="updateInfraDetails('fablab')">
-                    <div class="text-4xl mb-4">🛠️</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">FabLab Associatif</h3>
-                    <p class="text-gray-500 text-sm">Lieu de fabrication numérique et de prototypage.</p>
-                </div>
-
-                <!-- Medialab Card -->
-                <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 infra-card" onclick="updateInfraDetails('medialab')">
-                    <div class="text-4xl mb-4">🎬</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Médialab "Zarlor"</h3>
-                    <p class="text-gray-500 text-sm">Espace de création audiovisuelle et numérique.</p>
-                </div>
-
-                <!-- Coworking Card -->
-                <div class="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition cursor-pointer border border-gray-100 infra-card" onclick="updateInfraDetails('coworking')">
-                    <div class="text-4xl mb-4">🤝</div>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">Coworking Solidaire</h3>
-                    <p class="text-gray-500 text-sm">Espace de travail partagé pour entrepreneurs et freelances.</p>
-                </div>
-            </div>
-
-            <!-- Dynamic Detail View -->
-            <div id="infra-detail-panel" class="mt-8 bg-white rounded-2xl p-8 border border-orange-100 shadow-sm flex flex-col md:flex-row items-center gap-8 transition-all duration-300">
-                <div class="md:w-1/3 flex justify-center text-9xl opacity-80" id="infra-icon">🛠️</div>
-                <div class="md:w-2/3">
-                    <h3 class="text-2xl font-bold text-orange-600 mb-3" id="infra-title">Le FabLab Associatif</h3>
-                    <p class="text-gray-700 leading-relaxed mb-4" id="infra-desc">
-                        Véritable cœur battant de la créativité technique, notre FabLab permet à tous (débutants comme experts) d'accéder à des machines à commande numérique (imprimantes 3D, découpeuses laser). C'est un lieu d'apprentissage par le "faire" (Do It Yourself) et de prototypage rapide pour les porteurs de projets locaux.
-                    </p>
-                    <ul class="space-y-2 text-sm text-gray-600" id="infra-list">
-                        <li>• Accès aux machines numériques</li>
-                        <li>• Ateliers d'initiation et de perfectionnement</li>
-                        <li>• Communauté de "makers"</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Business Model & Sustainability -->
-    <section class="py-16 bg-white">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="grid md:grid-cols-2 gap-12 items-center">
-                <!-- Chart Side -->
-                <div class="order-2 md:order-1">
-                    <div class="chart-container">
-                        <canvas id="fundingChart"></canvas>
-                    </div>
-                </div>
-
-                <!-- Text Side -->
-                <div class="order-1 md:order-2">
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Un Modèle Économique Hybride</h2>
-                    <p class="text-gray-600 mb-6">
-                        La pérennité d'Emergence OI repose sur une diversification intelligente de ses ressources. 
-                        Nous ne dépendons pas d'une source unique. Notre modèle mixe missions de service public, 
-                        vente de formations qualifiantes (CPF) et prestations commerciales.
-                    </p>
-                    <div class="space-y-4">
-                        <div class="flex items-start">
-                            <div class="w-4 h-4 rounded-full bg-blue-500 mt-1 mr-3 flex-shrink-0"></div>
-                            <div>
-                                <h4 class="font-bold text-gray-900">Financements Publics & Subventions</h4>
-                                <p class="text-xs text-gray-500">Soutien aux missions d'intérêt général (Fabrique de Territoire).</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="w-4 h-4 rounded-full bg-orange-500 mt-1 mr-3 flex-shrink-0"></div>
-                            <div>
-                                <h4 class="font-bold text-gray-900">Revenus de Formation (Qualiopi)</h4>
-                                <p class="text-xs text-gray-500">Formations éligibles CPF, certification PIX, TOSA.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start">
-                            <div class="w-4 h-4 rounded-full bg-green-500 mt-1 mr-3 flex-shrink-0"></div>
-                            <div>
-                                <h4 class="font-bold text-gray-900">Prestations & Ventes</h4>
-                                <p class="text-xs text-gray-500">Services FabLab, coworking, privatisations.</p>
+                    <!-- Alignment Chart -->
+                    <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm flex flex-col">
+                        <h3 class="font-bold text-slate-800 mb-1 flex items-center"><span class="mr-2">🧭</span> Alignement avec nos Axes</h3>
+                        <p class="text-xs text-slate-500 mb-4">À quel point cet AAP finance notre cœur de métier ?</p>
+                        <div class="flex-grow flex items-center justify-center">
+                            <div class="chart-container">
+                                <canvas id="alignmentChart"></canvas>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- Action Catalog (Filterable) -->
-    <section id="actions" class="py-16 bg-[#fafaf9]">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl font-bold text-gray-900 mb-4">Notre Catalogue d'Actions</h2>
-                <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
-                    Explorez nos programmes concrets. Utilisez les filtres pour naviguer entre formation numérique, inclusion sociale et actions culturelles.
-                </p>
+                <!-- Pragmatic Assessment -->
+                <h3 class="font-bold text-slate-800 mb-4 text-lg border-b border-slate-200 pb-2">Évaluation Pragmatique</h3>
                 
-                <!-- Filters -->
-                <div class="flex flex-wrap justify-center gap-3">
-                    <button onclick="filterActions('all')" class="filter-btn px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white transition font-medium active-filter" data-filter="all">Tout voir</button>
-                    <button onclick="filterActions('numerique')" class="filter-btn px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-blue-500 hover:text-white transition font-medium" data-filter="numerique">Numérique</button>
-                    <button onclick="filterActions('social')" class="filter-btn px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-orange-500 hover:text-white transition font-medium" data-filter="social">Inclusion Sociale</button>
-                    <button onclick="filterActions('culture')" class="filter-btn px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:bg-purple-500 hover:text-white transition font-medium" data-filter="culture">Culture</button>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200">
+                        <div class="text-slate-400 text-2xl mb-2">⚙️</div>
+                        <h4 class="font-bold text-sm text-slate-700 mb-1">Faisabilité Opérationnelle</h4>
+                        <p class="text-sm text-slate-600" id="detail-feasibility">High</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-slate-200">
+                        <div class="text-slate-400 text-2xl mb-2">⚠️</div>
+                        <h4 class="font-bold text-sm text-slate-700 mb-1">Points de Vigilance</h4>
+                        <ul class="text-sm text-slate-600 list-disc pl-4 space-y-1" id="detail-risks">
+                            <!-- Risks injected here -->
+                        </ul>
+                    </div>
+                    <div class="bg-slate-800 text-white p-4 rounded-xl shadow-md flex flex-col justify-between" id="detail-decision-card">
+                        <div>
+                            <div class="text-2xl mb-2" id="detail-decision-icon">🚦</div>
+                            <h4 class="font-bold text-sm mb-1 text-slate-300">Recommandation</h4>
+                            <p class="font-bold text-lg" id="detail-decision">GO</p>
+                        </div>
+                        <button class="w-full mt-4 bg-white text-slate-900 py-2 rounded text-sm font-bold hover:bg-slate-100 transition">
+                            Préparer le dossier
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Grid -->
-            <div id="actions-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Content injected via JS -->
             </div>
+        </section>
+        
+        <!-- Mobile Placeholder for Details (Simplification for single file logic) -->
+        <div id="mobile-alert" class="md:hidden fixed bottom-0 left-0 w-full bg-slate-800 text-white p-4 text-center text-sm z-50 transform translate-y-full transition-transform duration-300">
+            Faites pivoter votre appareil ou utilisez une tablette/PC pour voir l'analyse détaillée du consultant.
         </div>
-    </section>
+    </main>
 
-    <!-- Footer / CTA -->
-    <footer class="bg-gray-900 text-white py-12">
-        <div class="max-w-4xl mx-auto px-4 text-center">
-            <h2 class="text-2xl font-bold mb-4">Construisons l'avenir ensemble</h2>
-            <p class="text-gray-400 mb-8">
-                Emergence OI est le partenaire unique pour vos projets d'impact à La Réunion.
-                Vous êtes une entreprise, une collectivité ou un particulier ?
-            </p>
-            <div class="flex justify-center gap-4">
-                <button class="px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-bold transition shadow-lg transform hover:scale-105">
-                    Devenir Partenaire
-                </button>
-                <button class="px-8 py-3 bg-transparent border border-white hover:bg-white hover:text-gray-900 text-white rounded-lg font-bold transition">
-                    Contactez-nous
-                </button>
-            </div>
-            <div class="mt-12 text-sm text-gray-500 border-t border-gray-800 pt-8">
-                &copy; 2025 Emergence OI. Tous droits réservés. | Fabrique de Territoire | Qualiopi
-            </div>
-        </div>
-    </footer>
-
-    <!-- JavaScript Logic -->
     <script>
-        // --- Data Definitions ---
-
-        const actionsData = [
+        // --- DATA ---
+        // Simulated AAP data based on real 2026/typical context in La Réunion
+        const aaps = [
             {
-                id: 1,
-                title: "Certification PIX & TOSA",
-                category: "numerique",
-                icon: "💻",
-                desc: "Parcours de formation pour valider les compétences numériques, du niveau débutant à expert. Indispensable pour l'employabilité moderne.",
-                tag: "Formation"
+                id: 'aap-1',
+                title: 'AMI FSE+ "Dispositifs de la deuxième chance"',
+                sponsor: 'Région Réunion / FSE+',
+                deadline: '27 Février 2026 (12h)',
+                urgency: 'critical', // critical, warning, normal
+                matchScore: 95,
+                tags: ['Inclusion', 'Formation'],
+                axes: [80, 100, 30, 70], // [Numérique, Inclusion, Culture, Territoire]
+                analysis: "C'est exactement notre cœur de cible pour le programme 'Croire au Potentiel de Chacun'. Cet AMI finance la remise en parcours des jeunes éloignés de l'emploi (NEETs). Les fonds FSE+ sont lourds administrativement, mais ce sont ceux qui financent le mieux la masse salariale des accompagnateurs sociaux et formateurs.",
+                pitch: "Positionner 'Croire au Potentiel de Chacun' comme un sas de remobilisation innovant utilisant le FabLab (faire pour reprendre confiance) avant l'orientation vers nos formations certifiantes (PIX).",
+                feasibility: "Ressources internes prêtes, programme déjà rodé. Reste à monter le budget FSE.",
+                risks: ["Clôture AUJOURD'HUI. Si on n'a pas déjà commencé, c'est mort pour cette session.", "Lourdeur du reporting FSE (fiches de temps obligatoires)."],
+                decision: "NO-GO (Trop tard) ou ALL-IN (Si dossier pré-rempli). Viser la prochaine relève.",
+                decisionColor: "bg-red-900"
             },
             {
-                id: 2,
-                title: "Tech'exploreur",
-                category: "numerique",
-                icon: "🚀",
-                desc: "Stages dédiés aux jeunes (8-14 ans) pour découvrir la modélisation 3D, le code et la robotique de manière ludique.",
-                tag: "Jeunesse"
+                id: 'aap-2',
+                title: 'AAP EDD "Climat, nos actions pour notre île"',
+                sponsor: 'DEAL Réunion',
+                deadline: '3 Avril 2026',
+                urgency: 'warning',
+                matchScore: 88,
+                tags: ['Territoire', 'Scolaire', 'Numérique'],
+                axes: [70, 50, 40, 90],
+                analysis: "Très belle opportunité pour lier notre expertise technique (FabLab) à un enjeu de société, ce qui plaît énormément aux financeurs actuels. La DEAL veut des actions concrètes d'adaptation ou d'atténuation. C'est parfait pour financer des interventions dans les écoles ou des ateliers grand public.",
+                pitch: "Proposer un programme 'Makers pour le Climat' : Ateliers dans les collèges/lycées pour prototyper des solutions locales (ex: capteurs CO2 avec Arduino, recyclage plastique en 3D) couplé à 'Racine & Pixels'.",
+                feasibility: "Très bonne. Nous avons l'équipement (FabLab) et les compétences d'animation. Demande juste une ingénierie pédagogique orientée 'climat'.",
+                risks: ["Ne pas faire de 'greenwashing'. Le projet doit avoir un impact mesurable sur l'éducation au DD.", "Budget souvent plafonné, ne financera pas de gros investissements matériels."],
+                decision: "GO ABSOLU. Priorité du mois de mars.",
+                decisionColor: "bg-green-700"
             },
             {
-                id: 3,
-                title: "Croire au Potentiel de Chacun",
-                category: "social",
-                icon: "🌱",
-                desc: "Programme de remobilisation pour les publics éloignés de l'emploi. Accompagnement sur-mesure pour redéfinir un projet pro.",
-                tag: "Inclusion"
+                id: 'aap-3',
+                title: 'Appel à Projets "Fondation pour l\'Inclusion"',
+                sponsor: 'Fondation d\'Entreprise (Privé)',
+                deadline: '15 Avril 2026',
+                urgency: 'normal',
+                matchScore: 75,
+                tags: ['Inclusion', 'Jeunesse'],
+                axes: [50, 90, 40, 60],
+                analysis: "Contrairement aux fonds publics, les fondations privées financent de l'innovation et de l'expérimentation avec beaucoup moins de lourdeur administrative. Elles cherchent l'impact direct sur les bénéficiaires.",
+                pitch: "Demander un co-financement pour nos stages 'Tech'exploreur' destinés aux jeunes de quartiers prioritaires (QPV), en insistant sur la réduction de la fracture numérique et l'égalité des chances.",
+                feasibility: "Excellente. Le formalisme est allégé (souvent un dossier de 10 pages maximum).",
+                risks: ["Les montants sont souvent plus faibles (10k€ - 20k€).", "Forte concurrence. Il faut un dossier très 'storytelling' et visuel."],
+                decision: "GO. Idéal pour diversifier nos revenus et sortir du 100% public.",
+                decisionColor: "bg-green-700"
             },
             {
-                id: 4,
-                title: "Résidences d'Artistes",
-                category: "culture",
-                icon: "🎨",
-                desc: "Accueil d'artistes locaux pour des temps de création au sein du tiers-lieu, favorisant les échanges avec les usagers.",
-                tag: "Création"
+                id: 'aap-4',
+                title: 'Kap Numérik 2026',
+                sponsor: 'Région Réunion',
+                deadline: 'Fil de l\'eau (Continu)',
+                urgency: 'normal',
+                matchScore: 60,
+                tags: ['Numérique', 'Fonctionnement'],
+                axes: [100, 20, 20, 30],
+                analysis: "Ce n'est pas pour financer nos actions vers les publics, mais pour financer NOTRE propre transformation numérique ou pour accompagner nos structures partenaires (associations hébergées au coworking) à le faire. Aide de 3200€ max (80% des dépenses).",
+                pitch: "Utiliser cette aide pour refondre le site web d'Emergence OI, intégrer un module de réservation en ligne pour le FabLab et le Médialab, ou renforcer notre cybersécurité.",
+                feasibility: "Formalité administrative simple via la plateforme régionale.",
+                risks: ["Plafond bas (3200€).", "Il faut avancer les frais avant le remboursement."],
+                decision: "À GARDER SOUS LE COUDE. À activer quand on a un devis prestataire prêt.",
+                decisionColor: "bg-slate-700"
             },
             {
-                id: 5,
-                title: "Racine & Pixels",
-                category: "social",
-                icon: "🌳",
-                desc: "Un pont entre patrimoine, agriculture et numérique. Se reconnecter à la terre tout en maîtrisant les outils digitaux.",
-                tag: "Innovation Sociale"
-            },
-            {
-                id: 6,
-                title: "Initiation IA & FabLab",
-                category: "numerique",
-                icon: "🤖",
-                desc: "Modules courts pour démystifier l'Intelligence Artificielle et apprendre à prototyper au FabLab.",
-                tag: "Atelier"
+                id: 'aap-5',
+                title: 'Dispositif Guétali 2025-2026',
+                sponsor: 'Région Réunion',
+                deadline: 'Session en cours',
+                urgency: 'normal',
+                matchScore: 70,
+                tags: ['Culture', 'Territoire'],
+                axes: [20, 40, 100, 80],
+                analysis: "Le dispositif phare de la Région pour la diffusion culturelle. Bien que nous ne soyons pas une compagnie de théâtre, nous sommes un Tiers-Lieu qui accueille des résidences d'artistes. Nous pouvons nous positionner comme structure d'accueil ou partenaire technique.",
+                pitch: "S'associer avec des artistes locaux éligibles au Guétali pour qu'ils créent/diffusent au sein de notre Médialab ou FabLab, créant ainsi des rencontres improbables avec nos publics en insertion.",
+                feasibility: "Demande un partenariat fort avec des artistes déjà structurés (SIRET, URSSAF). Nous ne porterions pas forcément le dossier seuls.",
+                risks: ["Dépendance vis-à-vis des artistes partenaires.", "Les délais de validation de la Région peuvent être longs."],
+                decision: "GO CONDITIONNEL. Si on identifie les bons artistes partenaires.",
+                decisionColor: "bg-orange-600"
             }
         ];
 
-        const infraData = {
-            fablab: {
-                title: "Le FabLab Associatif",
-                icon: "🛠️",
-                desc: "Véritable cœur battant de la créativité technique, notre FabLab permet à tous (débutants comme experts) d'accéder à des machines à commande numérique (imprimantes 3D, découpeuses laser). C'est un lieu d'apprentissage par le 'faire' (Do It Yourself) et de prototypage rapide pour les porteurs de projets locaux.",
-                list: ["• Accès aux machines numériques", "• Ateliers d'initiation et de perfectionnement", "• Communauté de 'makers'"]
-            },
-            medialab: {
-                title: "Le Médialab 'Zarlor'",
-                icon: "🎬",
-                desc: "Un espace dédié à la création de contenus numériques et audiovisuels. Studio photo, montage vidéo, podcasting : le Médialab offre les outils professionnels pour raconter des histoires et valoriser des projets. 'Zarlor' signifie trésor en créole, symbolisant la richesse des créations qui y naissent.",
-                list: ["• Studio fond vert & équipement son", "• Post-traitement photo & vidéo", "• Formation aux médias"]
-            },
-            coworking: {
-                title: "L'Espace de Coworking",
-                icon: "🤝",
-                desc: "Plus qu'un bureau, c'est un espace de connexion. Freelances, télétravailleurs et entrepreneurs s'y croisent pour travailler, mais surtout pour échanger. C'est le terreau fertile de la coopération territoriale et de l'émergence de nouveaux partenariats.",
-                list: ["• Postes de travail flexibles", "• Haut débit & convivialité", "• Événements de réseautage"]
+        let chartInstance = null;
+
+        // --- CORE FUNCTIONS ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderList();
+            
+            // Show mobile alert if viewing on small screen
+            if(window.innerWidth < 768) {
+                const alert = document.getElementById('mobile-alert');
+                alert.classList.remove('translate-y-full');
+                setTimeout(() => alert.classList.add('translate-y-full'), 4000);
             }
-        };
-
-        // --- Core Functions ---
-
-        // 1. Chart Initialization
-        document.addEventListener('DOMContentLoaded', function() {
-            initRadarChart();
-            initFundingChart();
-            renderActions('all'); // Initial render of catalog
         });
 
-        function initRadarChart() {
-            const ctx = document.getElementById('radarChart').getContext('2d');
-            new Chart(ctx, {
+        function renderList() {
+            const listContainer = document.getElementById('aap-list');
+            listContainer.innerHTML = '';
+
+            aaps.forEach(aap => {
+                // Urgency styling
+                let dotColor = 'bg-slate-400';
+                let textColor = 'text-slate-500';
+                if(aap.urgency === 'critical') { dotColor = 'bg-red-500 animate-pulse'; textColor = 'text-red-600'; }
+                else if(aap.urgency === 'warning') { dotColor = 'bg-orange-500'; textColor = 'text-orange-600'; }
+                else if(aap.urgency === 'normal') { dotColor = 'bg-green-500'; textColor = 'text-green-600'; }
+
+                // Match score color logic
+                let scoreColor = 'bg-green-500';
+                if(aap.matchScore < 70) scoreColor = 'bg-orange-400';
+                if(aap.matchScore < 50) scoreColor = 'bg-red-400';
+
+                const card = document.createElement('div');
+                card.className = `aap-card p-4 border-b border-slate-100`;
+                card.dataset.id = aap.id;
+                card.onclick = () => selectAAP(aap.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full ${dotColor}"></span>
+                            <span class="text-xs font-bold ${textColor}">${aap.deadline}</span>
+                        </div>
+                        <span class="text-xs font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">${aap.matchScore}% Match</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-sm mb-1 leading-tight">${aap.title}</h3>
+                    <p class="text-xs text-slate-500 mb-3">${aap.sponsor}</p>
+                    
+                    <div class="w-full bg-slate-200 rounded-full h-1.5 mb-2">
+                        <div class="${scoreColor} h-1.5 rounded-full" style="width: ${aap.matchScore}%"></div>
+                    </div>
+                    
+                    <div class="flex gap-1 flex-wrap">
+                        ${aap.tags.map(tag => `<span class="text-[10px] uppercase tracking-wider font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">${tag}</span>`).join('')}
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        }
+
+        function selectAAP(id) {
+            // UI Selection state
+            document.querySelectorAll('.aap-card').forEach(c => c.classList.remove('selected'));
+            document.querySelector(`.aap-card[data-id="${id}"]`).classList.add('selected');
+
+            // Find data
+            const aap = aaps.find(a => a.id === id);
+            if(!aap) return;
+
+            // Toggle views
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('content-state').classList.remove('hidden');
+            document.getElementById('content-state').classList.add('flex');
+
+            // Populate Content
+            document.getElementById('detail-title').textContent = aap.title;
+            document.getElementById('detail-sponsor').textContent = aap.sponsor;
+            
+            let deadlineColor = aap.urgency === 'critical' ? 'text-red-600' : 'text-slate-800';
+            document.getElementById('detail-deadline').innerHTML = `<span class="${deadlineColor}">${aap.deadline}</span>`;
+            
+            document.getElementById('detail-analysis').textContent = aap.analysis;
+            document.getElementById('detail-pitch').textContent = aap.pitch;
+            document.getElementById('detail-feasibility').textContent = aap.feasibility;
+            
+            // Populate Tags
+            const tagsContainer = document.getElementById('detail-tags');
+            tagsContainer.innerHTML = aap.tags.map(tag => `<span class="px-2 py-1 bg-slate-200 text-slate-700 text-xs font-bold rounded-md">${tag}</span>`).join('');
+
+            // Populate Risks
+            const risksContainer = document.getElementById('detail-risks');
+            risksContainer.innerHTML = aap.risks.map(risk => `<li>${risk}</li>`).join('');
+
+            // Populate Decision Card
+            document.getElementById('detail-decision').textContent = aap.decision;
+            const decisionCard = document.getElementById('detail-decision-card');
+            // Reset colors
+            decisionCard.className = `text-white p-4 rounded-xl shadow-md flex flex-col justify-between ${aap.decisionColor}`;
+            document.getElementById('detail-decision-icon').textContent = aap.decisionColor.includes('red') ? '🛑' : (aap.decisionColor.includes('green') ? '🚀' : '🤔');
+
+            // Update Chart
+            updateChart(aap.axes);
+        }
+
+        function updateChart(dataAxes) {
+            const ctx = document.getElementById('alignmentChart').getContext('2d');
+            
+            if(chartInstance) {
+                chartInstance.data.datasets[0].data = dataAxes;
+                chartInstance.update();
+                return;
+            }
+
+            chartInstance = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: ['Numérique & Innovation', 'Inclusion Sociale', 'Culture & Créativité', 'Ancrage Territorial'],
+                    labels: ['Numérique', 'Inclusion', 'Culture', 'Territoire'],
                     datasets: [{
-                        label: 'Intensité Stratégique',
-                        data: [90, 85, 70, 80], // Scores based on strategic emphasis in text
-                        fill: true,
-                        backgroundColor: 'rgba(234, 88, 12, 0.2)', // Orange-500 low opacity
-                        borderColor: 'rgb(234, 88, 12)',
-                        pointBackgroundColor: 'rgb(234, 88, 12)',
+                        label: 'Alignement (%)',
+                        data: dataAxes,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)', // Blue 600 with opacity
+                        borderColor: '#2563eb',
+                        pointBackgroundColor: '#2563eb',
                         pointBorderColor: '#fff',
                         pointHoverBackgroundColor: '#fff',
-                        pointHoverBorderColor: 'rgb(234, 88, 12)'
+                        pointHoverBorderColor: '#2563eb',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    elements: { line: { borderWidth: 3 } },
                     scales: {
                         r: {
-                            angleLines: { display: true },
+                            angleLines: { color: 'rgba(0,0,0,0.1)' },
+                            grid: { color: 'rgba(0,0,0,0.05)' },
                             suggestedMin: 0,
                             suggestedMax: 100,
-                            ticks: { display: false } // Hide numbers for cleaner look
+                            ticks: { display: false, stepSize: 20 },
+                            pointLabels: {
+                                font: { family: 'Inter', size: 11, weight: '600' },
+                                color: '#475569'
+                            }
                         }
                     },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 10,
                             callbacks: {
                                 label: function(context) {
-                                    const labels = [
-                                        "Formations PIX, TOSA, FabLab",
-                                        "Programmes remobilisation",
-                                        "Résidences, Scènes ouvertes",
-                                        "Animation écosystème local"
-                                    ];
-                                    return labels[context.dataIndex];
+                                    return ` Alignement: ${context.raw}%`;
                                 }
                             }
                         }
@@ -408,130 +422,6 @@
                 }
             });
         }
-
-        function initFundingChart() {
-            const ctx = document.getElementById('fundingChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Subventions Publiques', 'Revenus Formation (CPF)', 'Prestations & Mécénat'],
-                    datasets: [{
-                        data: [45, 35, 20], // Estimated split based on "Hybrid Model" description
-                        backgroundColor: [
-                            'rgb(59, 130, 246)', // Blue
-                            'rgb(249, 115, 22)', // Orange
-                            'rgb(34, 197, 94)'   // Green
-                        ],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
-
-        // 2. Interaction Logic
-
-        // Infrastructure Tab Switcher
-        function updateInfraDetails(key) {
-            const data = infraData[key];
-            const titleEl = document.getElementById('infra-title');
-            const descEl = document.getElementById('infra-desc');
-            const iconEl = document.getElementById('infra-icon');
-            const listEl = document.getElementById('infra-list');
-            const panel = document.getElementById('infra-detail-panel');
-
-            // Simple fade effect
-            panel.style.opacity = '0.5';
-            
-            setTimeout(() => {
-                titleEl.textContent = data.title;
-                descEl.textContent = data.desc;
-                iconEl.textContent = data.icon;
-                
-                // Rebuild list
-                listEl.innerHTML = '';
-                data.list.forEach(item => {
-                    const li = document.createElement('li');
-                    li.textContent = item;
-                    listEl.appendChild(li);
-                });
-
-                panel.style.opacity = '1';
-            }, 200);
-        }
-
-        // Action Catalog Filter
-        function renderActions(filter) {
-            const grid = document.getElementById('actions-grid');
-            grid.innerHTML = '';
-
-            const filteredData = filter === 'all' 
-                ? actionsData 
-                : actionsData.filter(item => item.category === filter);
-
-            filteredData.forEach(item => {
-                const card = document.createElement('div');
-                card.className = 'bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition duration-300 card-hover border border-gray-100 flex flex-col h-full';
-                
-                // Color coding borders based on category
-                let borderClass = '';
-                if(item.category === 'numerique') borderClass = 'border-t-4 border-blue-500';
-                else if(item.category === 'social') borderClass = 'border-t-4 border-orange-500';
-                else if(item.category === 'culture') borderClass = 'border-t-4 border-purple-500';
-
-                card.innerHTML = `
-                    <div class="${borderClass} p-6 flex-grow">
-                        <div class="flex justify-between items-start mb-4">
-                            <span class="text-3xl bg-gray-50 p-2 rounded-lg">${item.icon}</span>
-                            <span class="text-xs font-bold uppercase tracking-wider text-gray-400 border border-gray-200 rounded px-2 py-1">${item.tag}</span>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">${item.title}</h3>
-                        <p class="text-gray-600 text-sm leading-relaxed">${item.desc}</p>
-                    </div>
-                    <div class="bg-gray-50 px-6 py-3 mt-auto">
-                        <button class="text-orange-600 text-sm font-semibold hover:text-orange-800 flex items-center">
-                            En savoir plus <span class="ml-1">→</span>
-                        </button>
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        function filterActions(category) {
-            // Update UI buttons
-            const buttons = document.querySelectorAll('.filter-btn');
-            buttons.forEach(btn => {
-                if(btn.dataset.filter === category) {
-                    btn.classList.remove('bg-gray-200', 'text-gray-700');
-                    // Add specific color class based on category
-                    if(category === 'numerique') btn.classList.add('bg-blue-500', 'text-white');
-                    else if(category === 'social') btn.classList.add('bg-orange-500', 'text-white');
-                    else if(category === 'culture') btn.classList.add('bg-purple-500', 'text-white');
-                    else btn.classList.add('bg-gray-800', 'text-white'); // All
-                } else {
-                    // Reset styling
-                    btn.className = 'filter-btn px-5 py-2 rounded-full bg-gray-200 text-gray-700 hover:opacity-80 transition font-medium';
-                }
-            });
-
-            renderActions(category);
-        }
-
-        // Navigation Scroll
-        function scrollToSection(id) {
-            const element = document.getElementById(id);
-            if(element) {
-                element.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
     </script>
 </body>
 </html>
